@@ -22,11 +22,11 @@ fn main() {
             .expect("File size greater than 64 KiB");
         let file_num_blocks = (length / BLOCK_SIZE) + if length % BLOCK_SIZE != 0 { 1 } else { 0 };
         let mut header_block = Vec::new();
+        header_block.extend_from_slice(&length.to_be_bytes());
+        header_block.extend_from_slice(&file_num_blocks.to_be_bytes());
         header_block.push(file_name_len);
         header_block.extend_from_slice(file_name.to_str().unwrap().as_bytes());
         header_block.push(0);
-        header_block.extend_from_slice(&length.to_le_bytes());
-        header_block.extend_from_slice(&file_num_blocks.to_le_bytes());
         header_block.resize(BLOCK_SIZE as usize, 0);
         archive
             .write_all(&header_block)

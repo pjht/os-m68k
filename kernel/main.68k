@@ -1,0 +1,14 @@
+.global _start
+_start:
+  lea src, %a0
+  move.w (%a0), %d0
+  move.w (0x2, %a0), %d1
+  addi.l #0x56947208, (0x4, %a0)
+  stop #0x2700
+
+.data 
+
+src: 
+  .word 0xAA55
+  .word 0x55AA
+  .word 0xBB66

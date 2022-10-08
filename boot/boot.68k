@@ -1,0 +1,77 @@
+.global _start
+_start:
+move.b #0x4, %d0
+bsr.w find_first_card
+| Load the header sector for the kernel binary
+move.l #0x1, (%a0) | Set the sector number to 1
+| Transfer 0x100 (256) bytes from the storage card's data register to 0x100
+move.w #0x100, %a1 | Load a1, the destination address register, with 0x100
+move.w #0xFF, %d0 | Load d0 with the sector size - 1.
+hdr_sector_loop:
+move.b (4, %a0), (%a1)+ | Transfer a byte of sector data to the destination
+dbra %d0, hdr_sector_loop | Loop back if there is more to transfer
+move.w (0x102), %d0 | Load d0 with the number of sectors for the kernel - 1
+subq #0x1, %d0
+| load the ELF kernel binary off the disk
+move.l #0x2, (%a0) | Set the sector number to 2
+| Transfer 0x100 (256) * d0 bytes from the storage card's data register to 0xA000
+move.l #0xA000, %a1 | Load a1, the destination address register, with 0xA000
+sectors_loop:
+move.w #0xFF, %d1 | Load d0 with the sector size - 1.
+sector_loop:
+move.b (4, %a0), (%a1)+ | Transfer a byte of sector data to the destination
+dbra %d1, sector_loop | Loop back if there is more to transfer
+dbra %d0, sectors_loop | Loop back if there are more sectors to transfer
+move.l (0xA01C), %d0 | Load the offset of the program headers in the file 
+move.l #0xA000, %a0 | Put the address of the program headers in a0
+adda.w %d0, %a0
+move.w (0xA02C), %d0 | Put the number of program headers - 1 in d0
+subq #0x1, %d0
+phead_loop:
+move.l (%a0), %d1 | If the type of the program header isn't 1 (LOAD), skip the header
+cmpi.l #0x1, %d1
+bne.b next_seg
+| Zero the destination memory of the program header
+move.l (20, %a0), %d1 | Put the memory size of the program header - 1 in d1
+subq #0x1, %d1
+move.l (8, %a0), %a1 | Put the starting memory address of the program header in a1
+zero_loop:
+move.b #0, (%a1)+ | Zero a byte of the destination memory
+dbra %d1, zero_loop | Loop back if there is more to zero
+| Copy the data of the program header from the loaded file into position
+move.l (16, %a0), %d1 | Put the file size of the program header - 1 in d1
+subq #0x1, %d1
+move.l (4, %a0), %a1 | Put the address of the start of the loaded program header's data in a1
+adda.l #0xA000, %a1
+move.l (8, %a0), %a2 | Put the starting memory address of the program header in a2
+load_loop:
+move.b (%a1)+, (%a2)+ | Copy a byte of data into position
+dbra %d1, load_loop | Loop back if there is more to copy
+next_seg:
+lea (0x20, %a0), %a0 | Advance a0 to point to the next program header
+dbra %d0, phead_loop | If there are more program headers, loop back
+move.l (0xA018), %a0 | Load the entry point of the program into a0
+jmp (%a0) | Jump to the entry point of the program
+
+
+
+| Finds the first card with the type in d0.b, and returns it's IO base address in a0, or 0 if not found
+| Clobbers d1
+find_first_card:
+  move.l #0xff0000, %a0 | a0 holds the address of the current card
+ffc_loop:
+  lea (0x100, %a0), %a0 | adda.l #$100, %a0 | Move to the next card
+  move.b (0xff, %a0), %d1 | Load the type of the card into d1
+  beq.b ffc_done | If the type is 0 (empty slot), we have scanned all cards, so exit the loop
+  cmp.b %d0, %d1 | If the card is the type we want, return with the address in a0
+  beq.b ffc_done
+  bra.b ffc_loop | Loop back and check the next card
+ffc_done:
+  rts
+
+
+.if . != 256
+.org 255
+.byte 0
+.endif
+

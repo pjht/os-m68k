@@ -1,0 +1,8 @@
+---
+cards:
+  - type: rom
+    image: rom.bin
+  - type: ram
+    size: 65536
+  - type: storage
+    disk: os.dsk

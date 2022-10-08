@@ -1,0 +1,6 @@
+include_rules
+LDFLAGS += -T boot.ld
+
+: foreach *.68k |> !as |>
+: *.o | boot.ld |> !ld |> boot.elf
+: boot.elf |> m68k-elf-objcopy -O binary %f %o |> boot.bin
