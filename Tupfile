@@ -4,6 +4,6 @@ export RUSTUP_HOME
 
 RUSTC_FLAGS = -C debuginfo=0 -C opt-level=3 --edition 2021 
 
-: initrd_maker.rs |> rustc $(RUSTC_FLAGS) -o %o %f |> bin/initrd_maker
+: initrd_maker.rs |> rustc $(RUSTC_FLAGS) -o %o %f |> bin/%B
 : kernel/kernel.elf *.elf | bin/initrd_maker |> bin/initrd_maker %f |> initrd 
 : boot/boot.bin initrd |> cat %f > %o |> os.dsk
