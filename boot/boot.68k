@@ -11,7 +11,7 @@ hdr_sector_loop:
 move.b (4, %a0), (%a1)+ | Transfer a byte of sector data to the destination
 dbra %d0, hdr_sector_loop | Loop back if there is more to transfer
 move.w (0x102), %d0 | Load d0 with the number of sectors for the kernel - 1
-subq #0x1, %d0
+subq.w #0x1, %d0
 | load the ELF kernel binary off the disk
 move.l #0x2, (%a0) | Set the sector number to 2
 | Transfer 0x100 (256) * d0 bytes from the storage card's data register to 0xA000
@@ -26,21 +26,23 @@ move.l (0xA01C), %d0 | Load the offset of the program headers in the file
 move.l #0xA000, %a0 | Put the address of the program headers in a0
 adda.w %d0, %a0
 move.w (0xA02C), %d0 | Put the number of program headers - 1 in d0
-subq #0x1, %d0
+subq.w #0x1, %d0
 phead_loop:
 move.l (%a0), %d1 | If the type of the program header isn't 1 (LOAD), skip the header
 cmpi.l #0x1, %d1
 bne.b next_seg
 | Zero the destination memory of the program header
 move.l (20, %a0), %d1 | Put the memory size of the program header - 1 in d1
-subq #0x1, %d1
+subq.l #0x1, %d1
 move.l (8, %a0), %a1 | Put the starting memory address of the program header in a1
 zero_loop:
 move.b #0, (%a1)+ | Zero a byte of the destination memory
 dbra %d1, zero_loop | Loop back if there is more to zero
 | Copy the data of the program header from the loaded file into position
 move.l (16, %a0), %d1 | Put the file size of the program header - 1 in d1
-subq #0x1, %d1
+subq.l #0x1, %d1
+cmpi.l #0xFFFFFFFF, %d1 | If the file size is 0, skip the copy (ex, .bss section)
+beq.b next_seg
 move.l (4, %a0), %a1 | Put the address of the start of the loaded program header's data in a1
 adda.l #0xA000, %a1
 move.l (8, %a0), %a2 | Put the starting memory address of the program header in a2
