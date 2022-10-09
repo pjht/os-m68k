@@ -1,5 +1,6 @@
 .gitignore
 LDFLAGS = -z max-page-size=1
+ASFLAGS = -m68010
 
 !as = |> m68k-elf-as $(ASFLAGS) -o %o %f |> %B.o
 !ld = |> m68k-elf-ld $(LDFLAGS) -o %o %f |>
