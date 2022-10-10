@@ -5,11 +5,34 @@
 find_first_card:
   move.l #0xff0000, a0 | a0 holds the address of the current card
 ffc_loop:
-  lea (0x100, a0), a0 | adda.l #$100, a0 | Move to the next card
+  lea (0x100, a0), a0 | Move to the next card
   move.b (0xff, a0), d1 | Load the type of the card into d1
   beq.b ffc_done | If the type is 0 (empty slot), we have scanned all cards, so exit the loop
   cmp.b d0, d1 | If the card is the type we want, return with the address in a0
   beq.b ffc_done
   bra.b ffc_loop | Loop back and check the next card
 ffc_done:
+  rts
+
+get_all_cards:
+| Gets the indexes of the cards with the specified type
+| a0 is a pointer to the buffer to store the results in
+| d0 is the length of the buffer in 4 byte units
+| d1 is the type of card to find
+  move.l #0xff0000, a1 | a0 holds the address of the current card
+gac_loop:
+  lea (0x100, a1), a1 | Move to the next card
+  move.b (0xff, a1), d2 | Load the type of the card into d1
+  cmp.b d1, d2 | Check whether the type of the current card is the type we want 
+  bne.b gac_next | Skip the card if it is not
+  move.l a1, (a0) | Put the card base into the buffer
+  lea (0x4, a0), a0 | Move to the next buffer location
+  subq.w #1, d0 | Decement the count of available buffer locations
+gac_next:
+  cmpa.l #0xffff00, a1 | Check if we have gone through all the cards
+  beq.b gac_done | If so, return
+  cmpi.b #0, d0 | Check if we have filled the buffer
+  beq.b gac_done | If so, returm
+  bra.b gac_loop
+gac_done:
   rts
