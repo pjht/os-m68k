@@ -2,10 +2,3 @@
 _start:
   bsr.b scan_cards
   stop #0x2700
-
-.data 
-
-src: 
-  .word 0xAA55
-  .word 0x55AA
-  .word 0xBB66
